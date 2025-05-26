@@ -1,9 +1,12 @@
 services:
   - type: web
-    name: seu-app-nodejs
+    name: seu-app-node-puppeteer
     env: node
-    plan: starter
+    plan: free  # ou outro plano que você estiver usando
     buildCommand: |
       apt-get update && apt-get install -y chromium
       npm install
     startCommand: node index.js
+    envVars:
+      - key: PUPPETEER_EXECUTABLE_PATH
+        value: /usr/bin/chromium
