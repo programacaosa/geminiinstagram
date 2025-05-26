@@ -8,7 +8,6 @@ function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// ✅ NOVA FUNÇÃO: carrega respostas de vários arquivos txt
 function carregarRespostasDeArquivos(arquivos) {
   const mapa = {};
 
@@ -33,7 +32,6 @@ function carregarRespostasDeArquivos(arquivos) {
   return mapa;
 }
 
-// ✅ FUNÇÃO PARA BUSCAR RESPOSTA COM BASE NA MENSAGEM
 function buscarResposta(mensagem, mapaRespostas) {
   const mensagemLower = mensagem.toLowerCase();
   for (const chave in mapaRespostas) {
@@ -66,9 +64,14 @@ function salvarRespondidos(obj) {
 
 (async () => {
   const browser = await puppeteer.launch({
-    headless: false,
-    defaultViewport: null,
-    args: ['--start-maximized']
+    headless: true, // ✅ obrigatoriamente headless no Render
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-gpu',
+      '--window-size=1920,1080'
+    ]
   });
 
   const page = await browser.newPage();
@@ -86,7 +89,6 @@ function salvarRespondidos(obj) {
 
   console.log('🔄 Iniciando monitoramento contínuo...');
 
-  // ✅ Aqui você lista os arquivos que quer usar para carregar respostas
   const arquivosDeRespostas = ['./respostas.txt', './respostasExtras.txt', './respostasMarketing.txt'];
   const mapaRespostas = carregarRespostasDeArquivos(arquivosDeRespostas);
 
@@ -157,7 +159,6 @@ function salvarRespondidos(obj) {
           continue;
         }
 
-        // ✅ Busca resposta com base no mapa carregado de vários arquivos
         const resposta = buscarResposta(ultimaMensagem, mapaRespostas);
 
         if (!resposta) {
@@ -179,7 +180,7 @@ function salvarRespondidos(obj) {
         await digitarDevagar(input, resposta);
         await page.keyboard.press('Enter');
 
-        respondidos[nome] = ultimaMensagem;  // Salva a última mensagem respondida
+        respondidos[nome] = ultimaMensagem;
         salvarRespondidos(respondidos);
 
         await delay(4000);
