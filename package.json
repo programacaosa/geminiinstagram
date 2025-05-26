@@ -1,4 +1,15 @@
 {
+  "name": "meu-bot-instagram",
+  "version": "1.0.0",
+  "description": "Bot Instagram com Puppeteer e respostas automáticas",
+  "main": "index.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "axios": "^1.9.0",
@@ -9,6 +20,18 @@
     "puppeteer": "^24.9.0",
     "puppeteer-extra": "^3.3.6",
     "puppeteer-extra-plugin-stealth": "^2.11.2",
-    "mysql2": "^3.3.1"
-  }
+    "mysql2": "^3.3.1",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": [
+    "instagram",
+    "puppeteer",
+    "bot",
+    "automation"
+  ],
+  "author": "",
+  "license": "MIT"
 }
