@@ -8,7 +8,7 @@ function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// ✅ NOVA FUNÇÃO: carrega respostas de vários arquivos txt
+// Carrega respostas de vários arquivos txt
 function carregarRespostasDeArquivos(arquivos) {
   const mapa = {};
 
@@ -33,7 +33,7 @@ function carregarRespostasDeArquivos(arquivos) {
   return mapa;
 }
 
-// ✅ FUNÇÃO PARA BUSCAR RESPOSTA COM BASE NA MENSAGEM
+// Busca resposta no mapa com base na mensagem recebida
 function buscarResposta(mensagem, mapaRespostas) {
   const mensagemLower = mensagem.toLowerCase();
   for (const chave in mapaRespostas) {
@@ -44,6 +44,7 @@ function buscarResposta(mensagem, mapaRespostas) {
   return null;
 }
 
+// Digita o texto devagar no input para parecer humano
 async function digitarDevagar(elementHandle, texto) {
   for (const char of texto) {
     await elementHandle.type(char);
@@ -51,6 +52,7 @@ async function digitarDevagar(elementHandle, texto) {
   }
 }
 
+// Carrega histórico de mensagens respondidas para evitar repetições
 function carregarRespondidos() {
   try {
     const data = fs.readFileSync('./respondidos.json', 'utf8');
@@ -60,20 +62,26 @@ function carregarRespondidos() {
   }
 }
 
+// Salva histórico de mensagens respondidas
 function salvarRespondidos(obj) {
   fs.writeFileSync('./respondidos.json', JSON.stringify(obj, null, 2));
 }
 
 (async () => {
+  // Lê caminho do Chromium instalado via variável de ambiente
+  const chromiumPath = process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium';
+
   const browser = await puppeteer.launch({
-    headless: false,
+    headless: true,  // modo sem UI, mude para false para depurar localmente
+    executablePath: chromiumPath,
     defaultViewport: null,
-    args: ['--start-maximized']
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--start-maximized']
   });
 
   const page = await browser.newPage();
 
-  const cookies = JSON.parse(fs.readFileSync('./cookies.json'));
+  // Lê cookies salvos para autenticação (crie esse arquivo com cookies válidos)
+  const cookies = JSON.parse(fs.readFileSync('./cookies.json', 'utf8'));
   await page.setCookie(...cookies);
 
   console.log('🔐 Acessando o Instagram feed...');
@@ -86,7 +94,7 @@ function salvarRespondidos(obj) {
 
   console.log('🔄 Iniciando monitoramento contínuo...');
 
-  // ✅ Aqui você lista os arquivos que quer usar para carregar respostas
+  // Lista dos arquivos com respostas
   const arquivosDeRespostas = ['./respostas.txt', './respostasExtras.txt', './respostasMarketing.txt'];
   const mapaRespostas = carregarRespostasDeArquivos(arquivosDeRespostas);
 
@@ -98,7 +106,7 @@ function salvarRespondidos(obj) {
       const respondidos = carregarRespondidos();
 
       for (const nome of nomesChats) {
-        console.log(`🔎 Procurando: ${nome}`);
+        console.log(`🔎 Procurando chat com: ${nome}`);
 
         let encontrado = false;
         let tentativas = 0;
@@ -133,6 +141,7 @@ function salvarRespondidos(obj) {
         console.log(`✅ Chat com "${nome}" aberto!`);
         await delay(4000);
 
+        // Captura mensagens do chat
         const mensagens = await page.evaluate(() => {
           const elementos = Array.from(document.querySelectorAll('div[dir="auto"].html-div'));
           return elementos.map(el => {
@@ -149,7 +158,6 @@ function salvarRespondidos(obj) {
         }
 
         const ultimaMensagem = mensagens[mensagens.length - 1].texto;
-
         console.log(`📝 Última mensagem de "${nome}": "${ultimaMensagem}"`);
 
         if (respondidos[nome] && respondidos[nome] === ultimaMensagem) {
@@ -157,14 +165,15 @@ function salvarRespondidos(obj) {
           continue;
         }
 
-        // ✅ Busca resposta com base no mapa carregado de vários arquivos
+        // Busca resposta no mapa
         const resposta = buscarResposta(ultimaMensagem, mapaRespostas);
 
         if (!resposta) {
-          console.log(`⚠️ Nenhuma resposta configurada para "${ultimaMensagem}". Pulando...`);
+          console.log(`⚠️ Nenhuma resposta configurada para a mensagem: "${ultimaMensagem}". Pulando...`);
           continue;
         }
 
+        // Envia resposta no chat
         const inputSelector = 'textarea, div[contenteditable="true"]';
         await page.waitForSelector(inputSelector, { visible: true });
         const input = await page.$(inputSelector);
@@ -175,16 +184,15 @@ function salvarRespondidos(obj) {
         }
 
         console.log(`💬 Enviando resposta para "${nome}": ${resposta}`);
-
         await digitarDevagar(input, resposta);
         await page.keyboard.press('Enter');
 
-        respondidos[nome] = ultimaMensagem;  // Salva a última mensagem respondida
+        // Atualiza respondidos para não repetir resposta para mesma mensagem
+        respondidos[nome] = ultimaMensagem;
         salvarRespondidos(respondidos);
 
         await delay(4000);
       }
-
     } catch (e) {
       console.error('Erro no loop principal:', e);
     }
